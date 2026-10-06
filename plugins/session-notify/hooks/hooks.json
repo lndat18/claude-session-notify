@@ -1,0 +1,29 @@
+{
+  "description": "Windows toast + sound when Claude Code finishes (Stop) or needs you (Notification), skipped while you are looking at this project's window.",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/runtime/notify.py\" Asterisk",
+            "async": true,
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/runtime/notify.py\" Exclamation",
+            "async": true,
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

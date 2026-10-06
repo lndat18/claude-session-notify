@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "lndat-plugins",
+  "description": "Claude Code plugins by lndat18",
+  "owner": {
+    "name": "lndat18"
+  },
+  "plugins": [
+    {
+      "name": "session-notify",
+      "description": "Windows toast + sound when Claude Code finishes or needs you, only when you are not looking at that session (VS Code + WSL).",
+      "category": "productivity",
+      "source": "./plugins/session-notify"
+    }
+  ]
+}

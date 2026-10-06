@@ -1,0 +1,12 @@
+{
+  "name": "session-notify",
+  "version": "1.0.0",
+  "description": "Windows toast + sound when Claude Code finishes or needs you, only when you are not looking at that session (VS Code + WSL).",
+  "author": {
+    "name": "lndat18"
+  },
+  "homepage": "https://github.com/lndat18/claude-session-notify",
+  "repository": "https://github.com/lndat18/claude-session-notify",
+  "license": "MIT",
+  "keywords": ["notification", "toast", "wsl", "vscode", "hooks"]
+}
