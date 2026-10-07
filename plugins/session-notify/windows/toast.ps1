@@ -25,8 +25,8 @@ try { [System.Media.SystemSounds]::$Sound.Play() } catch {}
 # Drop your own PNG at %LOCALAPPDATA%\ClaudeSessionNotify\claude.png to override.
 $dir = Join-Path $env:LOCALAPPDATA 'ClaudeSessionNotify'
 $icon = Join-Path $dir 'claude.png'
+New-Item -ItemType Directory -Path $dir -Force | Out-Null
 if (-not (Test-Path $icon)) {
-  New-Item -ItemType Directory -Path $dir -Force | Out-Null
   $pkg = Get-AppxPackage | Where-Object { $_.Name -like '*Claude*' } | Select-Object -First 1
   if ($pkg) {
     $src = Join-Path $pkg.InstallLocation 'assets\Square150x150Logo.png'
@@ -42,13 +42,27 @@ if (-not (Test-Path $key)) { New-Item -Path $key -Force | Out-Null }
 Set-ItemProperty -Path $key -Name DisplayName -Value 'Claude Code'
 if ($hasIcon) { Set-ItemProperty -Path $key -Name IconUri -Value $icon }
 
+# Click-to-focus: copy the handler to a local folder (works even if WSL is idle, survives plugin
+# updates) and register the claude-session-notify:// protocol under HKCU.
+foreach ($f in 'focus.ps1', 'focus.vbs') {
+  Copy-Item (Join-Path $PSScriptRoot $f) (Join-Path $dir $f) -Force
+}
+$proto = 'HKCU:\Software\Classes\claude-session-notify'
+$cmdKey = "$proto\shell\open\command"
+if (-not (Test-Path $cmdKey)) { New-Item -Path $cmdKey -Force | Out-Null }
+Set-ItemProperty -Path $proto -Name '(default)' -Value 'URL:Claude Session Notify'
+Set-ItemProperty -Path $proto -Name 'URL Protocol' -Value ''
+$vbs = Join-Path $dir 'focus.vbs'
+Set-ItemProperty -Path $cmdKey -Name '(default)' -Value "wscript.exe `"$vbs`" `"%1`""
+$launch = 'claude-session-notify://focus?project=' + [Uri]::EscapeDataString($Project)
+
 $logo = ''
 if ($hasIcon) { $logo = "<image placement='appLogoOverride' src='$(Esc $icon)'/>" }
 $attr = ''
 if ($Project) { $attr = "<text placement='attribution'>$(Esc $Project)</text>" }
 
 $xml = New-Object Windows.Data.Xml.Dom.XmlDocument
-$xml.LoadXml("<toast><visual><binding template='ToastGeneric'>$logo<text>$(Esc $Title)</text><text>$(Esc $Message)</text>$attr</binding></visual><audio silent='true'/></toast>")
+$xml.LoadXml("<toast activationType='protocol' launch='$(Esc $launch)'><visual><binding template='ToastGeneric'>$logo<text>$(Esc $Title)</text><text>$(Esc $Message)</text>$attr</binding></visual><audio silent='true'/></toast>")
 
 $toast = New-Object Windows.UI.Notifications.ToastNotification $xml
 [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($appId).Show($toast)

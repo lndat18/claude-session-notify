@@ -35,6 +35,7 @@ python3 ~/.claude/plugins/marketplaces/lndat-plugins/plugins/session-notify/runt
 - Toast shows the **session title** (your `/rename`, or the auto title), a **trimmed preview** of the answer, and the project name.
 - Header shows "Claude Code" with the Claude logo instead of "Windows PowerShell".
 - **Focus-aware:** no toast while the focused window is this project's VS Code window. With two VS Code windows on two projects, the toast still fires for the project you are not looking at.
+- **Click to return:** clicking the toast brings that project's VS Code window to the foreground (restores it if minimized). It does not pick a specific terminal tab inside the window.
 - Installed once as a user plugin: applies to every project.
 
 ## Requirements / Yêu cầu
@@ -58,7 +59,7 @@ The Claude logo is copied at first run from your local Claude Desktop install; i
 - Two VS Code windows whose folder names contain each other's name can be confused.
 - Plain terminals (Windows Terminal, WezTerm, Alacritty): any focus counts as watching, since tab titles lack the project name.
 - The `Stop` hook reads the transcript; if it is not flushed yet the preview may show the previous reply.
-- Clicking the toast does not switch windows (see [codex-session-notify](https://github.com/lndat18/codex-session-notify) for that).
+- Clicking the toast focuses the window, not a specific terminal tab. Several Claude terminals in one VS Code window need an extension for that (see [codex-session-notify](https://github.com/lndat18/codex-session-notify)).
 - If you already added Stop/Notification hooks in `~/.claude/settings.json` for the same purpose, remove them to avoid duplicate toasts.
 
 ## Uninstall / Gỡ
@@ -67,7 +68,7 @@ The Claude logo is copied at first run from your local Claude Desktop install; i
 /plugin uninstall session-notify@lndat-plugins
 ```
 
-The registry key `HKCU\Software\Classes\AppUserModelId\ClaudeSessionNotify` and `%LOCALAPPDATA%\ClaudeSessionNotify\` can be deleted manually.
+Registry keys `HKCU\Software\Classes\AppUserModelId\ClaudeSessionNotify` and `HKCU\Software\Classes\claude-session-notify`, and the folder `%LOCALAPPDATA%\ClaudeSessionNotify\`, can be deleted manually.
 
 ## License
 
