@@ -2,7 +2,9 @@ param(
   [string]$TitleB64,
   [string]$MessageB64,
   [string]$ProjectB64,
-  [string]$Sound = 'Asterisk'
+  [string]$Sound = 'Asterisk',
+  [string]$Token = '',
+  [string]$StateDir = ''
 )
 
 # Text arrives as UTF-8 Base64 so non-ASCII survives the WSL -> Windows command line.
@@ -54,7 +56,12 @@ Set-ItemProperty -Path $proto -Name '(default)' -Value 'URL:Claude Session Notif
 Set-ItemProperty -Path $proto -Name 'URL Protocol' -Value ''
 $vbs = Join-Path $dir 'focus.vbs'
 Set-ItemProperty -Path $cmdKey -Name '(default)' -Value "wscript.exe `"$vbs`" `"%1`""
+# Handler config comes from this script, never from the URL: the URL only carries an opaque token.
+if ($StateDir) {
+  [IO.File]::WriteAllText((Join-Path $dir 'config.json'), (ConvertTo-Json @{ stateDir = $StateDir }))
+}
 $launch = 'claude-session-notify://focus?project=' + [Uri]::EscapeDataString($Project)
+if ($Token -match '^[0-9a-fA-F-]{36}$') { $launch += '&token=' + $Token }
 
 $logo = ''
 if ($hasIcon) { $logo = "<image placement='appLogoOverride' src='$(Esc $icon)'/>" }

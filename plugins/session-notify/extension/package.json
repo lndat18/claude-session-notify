@@ -1,0 +1,22 @@
+{
+  "name": "session-notify-terminals",
+  "displayName": "Claude Session Notify (terminals)",
+  "publisher": "lndat18",
+  "version": "1.0.0",
+  "description": "Lets the session-notify Claude Code plugin know which VS Code terminal runs which session, and focus it when a toast is clicked.",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "main": "./extension.js",
+  "extensionKind": [
+    "workspace"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    }
+  }
+}

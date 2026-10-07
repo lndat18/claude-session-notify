@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Claude Code hook (Stop / Notification): Windows toast + sound from WSL.
 
-Skips the toast while the focused window is the terminal/IDE of this project.
+Skips the toast while you are looking at this session. With the VS Code extension installed
+this is exact (window focused AND this session's terminal active, and clicking the toast
+focuses that terminal); without it, it falls back to matching the focused window title.
 
 Usage:
   notify.py [Asterisk|Exclamation|...]   # hook mode, JSON payload on stdin
@@ -15,6 +17,8 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+
+import sessions
 
 MAX_BODY = 180
 MAX_TITLE = 60
@@ -123,8 +127,12 @@ def _b64(text: str) -> str:
     return base64.b64encode(text.encode("utf-8")).decode("ascii")
 
 
-def _show_toast(title: str, body: str, project: str, sound: str) -> None:
-    script = subprocess.check_output(["wslpath", "-w", str(TOAST_SCRIPT)], text=True).strip()
+def _wslpath(path: Path) -> str:
+    return subprocess.check_output(["wslpath", "-w", str(path)], text=True).strip()
+
+
+def _show_toast(title: str, body: str, project: str, sound: str, token: str = "") -> None:
+    script = _wslpath(TOAST_SCRIPT)
     subprocess.run(
         [
             "powershell.exe",
@@ -141,6 +149,10 @@ def _show_toast(title: str, body: str, project: str, sound: str) -> None:
             _b64(project),
             "-Sound",
             sound,
+            "-Token",
+            token,
+            "-StateDir",
+            _wslpath(sessions.STATE),
         ],
         check=False,
         stdout=subprocess.DEVNULL,
@@ -160,7 +172,12 @@ def main() -> None:
         data = {}
 
     project = Path(data.get("cwd") or ".").name
-    if _user_is_watching(project):
+    terminal = sessions.find_terminal()
+    if terminal:
+        # Extension present: exact check. Watching = window focused and this session's terminal active.
+        if terminal["focused"] and terminal["active"]:
+            return
+    elif _user_is_watching(project):
         return
 
     title, last_text = _read_transcript(data.get("transcript_path", ""))
@@ -169,7 +186,8 @@ def main() -> None:
     else:
         body = _clean_markdown(data.get("last_assistant_message") or last_text) or T["finished"]
 
-    _show_toast(_trim(title or project or "Claude Code", MAX_TITLE), _trim(body, MAX_BODY), project, sound)
+    token = sessions.make_ticket(terminal, project) if terminal else ""
+    _show_toast(_trim(title or project or "Claude Code", MAX_TITLE), _trim(body, MAX_BODY), project, sound, token)
 
 
 if __name__ == "__main__":

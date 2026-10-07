@@ -35,8 +35,21 @@ python3 ~/.claude/plugins/marketplaces/lndat-plugins/plugins/session-notify/runt
 - Toast shows the **session title** (your `/rename`, or the auto title), a **trimmed preview** of the answer, and the project name.
 - Header shows "Claude Code" with the Claude logo instead of "Windows PowerShell".
 - **Focus-aware:** no toast while the focused window is this project's VS Code window. With two VS Code windows on two projects, the toast still fires for the project you are not looking at.
-- **Click to return:** clicking the toast brings that project's VS Code window to the foreground (restores it if minimized). It does not pick a specific terminal tab inside the window.
+- **Click to return:** clicking the toast brings that project's VS Code window to the foreground (restores it if minimized).
+- **Exact terminal (VS Code extension):** with the bundled extension installed, the plugin knows which terminal runs which session. No toast while *that* terminal is the active one in the focused window (other terminals in the same window still notify), and clicking the toast selects that exact terminal.
 - Installed once as a user plugin: applies to every project.
+
+## VS Code extension (exact terminal) / Extension VS Code
+
+`install.sh` installs it automatically when run from a VS Code integrated terminal. Otherwise, from a VS Code terminal:
+
+```bash
+python3 ~/.claude/plugins/marketplaces/lndat-plugins/plugins/session-notify/runtime/install_extension.py
+```
+
+Then run **Developer: Reload Window** in each open VS Code WSL window. Remove it with `--uninstall`. Without the extension everything still works, at window level.
+
+How it works: the extension publishes its terminals' shell pids in `~/.claude/session-notify/`. The hook walks up its process tree to find the terminal shell, stores a ticket, and the toast carries only an opaque token. The Windows click handler focuses the window, then drops a request file that the extension turns into `terminal.show()`.
 
 ## Requirements / Yêu cầu
 
@@ -55,11 +68,12 @@ The Claude logo is copied at first run from your local Claude Desktop install; i
 
 ## Limitations / Giới hạn
 
-- Several Claude sessions in the same VS Code window cannot be told apart: that window being focused counts as watching.
+- Without the VS Code extension, several Claude sessions in the same VS Code window cannot be told apart.
+- Claude run from the Claude Code VS Code panel (not a terminal) is not a terminal, so it uses window-level detection.
 - Two VS Code windows whose folder names contain each other's name can be confused.
 - Plain terminals (Windows Terminal, WezTerm, Alacritty): any focus counts as watching, since tab titles lack the project name.
 - The `Stop` hook reads the transcript; if it is not flushed yet the preview may show the previous reply.
-- Clicking the toast focuses the window, not a specific terminal tab. Several Claude terminals in one VS Code window need an extension for that (see [codex-session-notify](https://github.com/lndat18/codex-session-notify)).
+- Terminal-exact focus needs the extension; without it a click focuses the window only.
 - If you already added Stop/Notification hooks in `~/.claude/settings.json` for the same purpose, remove them to avoid duplicate toasts.
 
 ## Uninstall / Gỡ
@@ -68,7 +82,7 @@ The Claude logo is copied at first run from your local Claude Desktop install; i
 /plugin uninstall session-notify@lndat-plugins
 ```
 
-Registry keys `HKCU\Software\Classes\AppUserModelId\ClaudeSessionNotify` and `HKCU\Software\Classes\claude-session-notify`, and the folder `%LOCALAPPDATA%\ClaudeSessionNotify\`, can be deleted manually.
+Also remove the extension with `install.sh --uninstall`. Registry keys `HKCU\Software\Classes\AppUserModelId\ClaudeSessionNotify` and `HKCU\Software\Classes\claude-session-notify`, and the folder `%LOCALAPPDATA%\ClaudeSessionNotify\`, can be deleted manually.
 
 ## License
 

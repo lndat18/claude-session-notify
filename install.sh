@@ -5,7 +5,7 @@
 #
 # Options:
 #   --local       register this clone (path) instead of the GitHub repo; keep the clone afterwards
-#   --uninstall   remove the plugin and the marketplace
+#   --uninstall   remove the plugin, the marketplace and the VS Code extension
 #   --dry-run     print what would run, change nothing
 set -euo pipefail
 
@@ -39,6 +39,7 @@ command -v claude >/dev/null || fail "Claude Code CLI ('claude') not found in PA
 if [ "$mode" = uninstall ]; then
   run claude plugin uninstall "$PLUGIN@$MARKETPLACE" || true
   run claude plugin marketplace remove "$MARKETPLACE" || true
+  run python3 "$DIR/plugins/$PLUGIN/runtime/install_extension.py" --uninstall || true
   echo "Removed. Optional cleanup on Windows: %LOCALAPPDATA%\\ClaudeSessionNotify and HKCU\\Software\\Classes\\AppUserModelId\\ClaudeSessionNotify"
   exit 0
 fi
@@ -60,7 +61,15 @@ else
 fi
 run claude plugin install "$PLUGIN@$MARKETPLACE"
 
+# VS Code extension: lets a toast click select the exact terminal running the session.
+# Needs a live VS Code WSL connection (run this script from a VS Code terminal); optional.
+if ! run python3 "$DIR/plugins/$PLUGIN/runtime/install_extension.py"; then
+  echo "NOTE: VS Code extension not installed. Toast click will only focus the project window."
+  echo "      To add terminal-exact focus later, run from a VS Code terminal:"
+  echo "      python3 $DIR/plugins/$PLUGIN/runtime/install_extension.py"
+fi
+
 if [ "$dry" -eq 0 ]; then
   python3 "$DIR/plugins/$PLUGIN/runtime/notify.py" --test || true
 fi
-echo "Done. Restart Claude Code (or run /hooks) so the hooks load."
+echo "Done. Restart Claude Code (or run /hooks) so the hooks load, and run 'Developer: Reload Window' in your VS Code windows."
