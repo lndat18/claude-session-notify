@@ -1,6 +1,6 @@
 {
   "name": "session-notify",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Windows toast + sound when Claude Code finishes or needs you, only when you are not looking at that session (VS Code + WSL).",
   "author": {
     "name": "lndat18"

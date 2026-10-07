@@ -1,6 +1,8 @@
-param([string]$Uri)
+param([string]$Uri, [switch]$RestoreOnly)
 
-# Invoked by the claude-session-notify:// protocol when a toast is clicked.
+# Click handler's PowerShell part. focus.vbs already focused the window with AppActivate and asked for the
+# terminal (fast, ~0.1 s); it starts this with -RestoreOnly as a safety net, because AppActivate can leave a
+# minimized window minimized when Windows denies the focus change. Without -RestoreOnly it does everything.
 # 1. Brings the VS Code (or other IDE) window whose title contains the project name to the foreground.
 # 2. If the URL carries a ticket token, asks the VS Code extension to focus that exact terminal.
 # The URL is untrusted input (any web page can open a registered protocol): only a UUID token and a
@@ -25,47 +27,9 @@ if ($token) {
 }
 if (-not $project) { exit 0 }
 
-Add-Type @"
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Runtime.InteropServices;
-public class Win {
-  delegate bool EnumProc(IntPtr h, IntPtr l);
-  [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc cb, IntPtr l);
-  [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
-  [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
-  [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint p);
-  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
-  [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);
-  [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr h);
-  [DllImport("user32.dll")] public static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
+. (Join-Path $PSScriptRoot 'winapi.ps1')
 
-  // Every visible top-level window: handle, owning process id, title.
-  public static List<object[]> TopWindows() {
-    var list = new List<object[]>();
-    EnumWindows((h, l) => {
-      if (!IsWindowVisible(h)) return true;
-      var sb = new StringBuilder(512);
-      GetWindowText(h, sb, 512);
-      if (sb.Length == 0) return true;
-      uint pid; GetWindowThreadProcessId(h, out pid);
-      list.Add(new object[] { h, (int)pid, sb.ToString() });
-      return true;
-    }, IntPtr.Zero);
-    return list;
-  }
-}
-"@
-
-$hosts = 'Code', 'Code - Insiders', 'Cursor', 'Windsurf', 'idea64', 'pycharm64'
-$pids = @{}
-Get-Process -Name $hosts -ErrorAction SilentlyContinue | ForEach-Object { $pids[$_.Id] = $true }
-
-$target = [Win]::TopWindows() |
-  Where-Object { $pids.ContainsKey($_[1]) -and $_[2] -like "*$project*" } |
-  Select-Object -First 1
-
+$target = Find-IdeWindow $project
 if ($target) {
   $h = $target[0]
   if ([Win]::IsIconic($h)) { [void][Win]::ShowWindow($h, 9) }   # SW_RESTORE; maximized windows stay maximized
@@ -79,6 +43,6 @@ if ($target) {
 }
 
 # Window is in front; now have the extension select the terminal that runs the session.
-if ($ticket -and $state) {
+if ($ticket -and $state -and -not $RestoreOnly) {
   New-Item -ItemType File -Path (Join-Path $state "requests\$token") -Force | Out-Null
 }

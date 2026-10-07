@@ -51,6 +51,10 @@ Then run **Developer: Reload Window** in each open VS Code WSL window. Remove it
 
 How it works: the extension publishes its terminals' shell pids in `~/.claude/session-notify/`. The hook walks up its process tree to find the terminal shell, stores a ticket, and the toast carries only an opaque token. The Windows click handler focuses the window, then drops a request file that the extension turns into `terminal.show()`.
 
+**Speed:** `powershell.exe` takes 1.3-2.8 s to start from WSL, so the click handler avoids it. `focus.vbs` (run by `wscript.exe`, ~0.1 s) calls `AppActivate` with the end of the window title ("`<folder> [WSL: Ubuntu] - Visual Studio Code`", saved by the toast script; it does not change when the active file changes) and creates the request file: click to terminal in ~0.1 s. PowerShell still runs hidden afterwards as a safety net that restores a minimized window, and does the whole job if the fast path fails. The toast itself still needs one PowerShell start (~1.5 s after Claude finishes).
+
+*Tried and dropped:* a small native `.exe` helper (80 ms start). Windows Application Control / Smart App Control blocked the locally compiled, unsigned binary after a few runs, so a click could silently do nothing.
+
 ## Requirements / Yêu cầu
 
 - Windows 10/11 + WSL with interop (`powershell.exe`, `wslpath` reachable).

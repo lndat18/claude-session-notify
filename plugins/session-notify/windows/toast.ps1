@@ -46,7 +46,7 @@ if ($hasIcon) { Set-ItemProperty -Path $key -Name IconUri -Value $icon }
 
 # Click-to-focus: copy the handler to a local folder (works even if WSL is idle, survives plugin
 # updates) and register the claude-session-notify:// protocol under HKCU.
-foreach ($f in 'focus.ps1', 'focus.vbs') {
+foreach ($f in 'focus.ps1', 'focus.vbs', 'winapi.ps1') {
   Copy-Item (Join-Path $PSScriptRoot $f) (Join-Path $dir $f) -Force
 }
 $proto = 'HKCU:\Software\Classes\claude-session-notify'
@@ -59,6 +59,7 @@ Set-ItemProperty -Path $cmdKey -Name '(default)' -Value "wscript.exe `"$vbs`" `"
 # Handler config comes from this script, never from the URL: the URL only carries an opaque token.
 if ($StateDir) {
   [IO.File]::WriteAllText((Join-Path $dir 'config.json'), (ConvertTo-Json @{ stateDir = $StateDir }))
+  [IO.File]::WriteAllText((Join-Path $dir 'state.txt'), $StateDir, (New-Object Text.UTF8Encoding $false))  # read by focus.vbs
 }
 $launch = 'claude-session-notify://focus?project=' + [Uri]::EscapeDataString($Project)
 if ($Token -match '^[0-9a-fA-F-]{36}$') { $launch += '&token=' + $Token }
@@ -73,3 +74,14 @@ $xml.LoadXml("<toast activationType='protocol' launch='$(Esc $launch)'><visual><
 
 $toast = New-Object Windows.UI.Notifications.ToastNotification $xml
 [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($appId).Show($toast)
+
+# After the toast is on screen: remember the end of this project's window title ("<folder> [WSL: ..] -
+# Visual Studio Code"). focus.vbs uses it for a fast AppActivate; it stays valid while the active file changes.
+if ($StateDir -and $Token -match '^[0-9a-fA-F-]{36}$' -and $Project) {
+  . (Join-Path $PSScriptRoot 'winapi.ps1')
+  $w = Find-IdeWindow $Project
+  if ($w) {
+    $i = $w[2].LastIndexOf($Project, [StringComparison]::OrdinalIgnoreCase)
+    [IO.File]::WriteAllText((Join-Path $StateDir "tickets\$Token.title"), $w[2].Substring($i), (New-Object Text.UTF8Encoding $false))
+  }
+}
