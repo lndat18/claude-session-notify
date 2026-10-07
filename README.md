@@ -84,6 +84,15 @@ The Claude logo is copied at first run from your local Claude Desktop install; i
 
 Also remove the extension with `install.sh --uninstall`. Registry keys `HKCU\Software\Classes\AppUserModelId\ClaudeSessionNotify` and `HKCU\Software\Classes\claude-session-notify`, and the folder `%LOCALAPPDATA%\ClaudeSessionNotify\`, can be deleted manually.
 
+## Tests / Kiểm thử
+
+```bash
+node tests/extension_cases.js          # extension: terminal selection, two windows, closed/renamed/reused terminals
+python3 -m unittest discover -s tests  # hook: process-tree lookup, tickets, watching rules (shimmed powershell.exe)
+```
+
+Both run without VS Code or Windows (fake `vscode` API, real processes, shimmed `powershell.exe`).
+
 ## License
 
 MIT
