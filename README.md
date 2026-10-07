@@ -6,7 +6,17 @@ Thông báo Windows (toast + âm thanh) cho Claude Code trong VS Code + WSL, ch�
 
 ## Install / Cài đặt
 
-Inside Claude Code / Trong Claude Code:
+**One line from a WSL terminal / Một dòng từ terminal WSL:**
+
+```bash
+git clone https://github.com/lndat18/claude-session-notify.git && bash claude-session-notify/install.sh
+```
+
+The script checks prerequisites, registers the marketplace, installs the plugin and shows a test toast. `--local` registers the clone instead of GitHub, `--uninstall` removes everything, `--dry-run` previews. Update later with `/plugin marketplace update lndat-plugins`.
+
+Script tự kiểm tra điều kiện, đăng ký marketplace, cài plugin và hiện toast thử. Có thể xoá thư mục clone sau khi cài (trừ khi dùng `--local`).
+
+**Or manually inside Claude Code / Hoặc thủ công trong Claude Code:**
 
 ```text
 /plugin marketplace add lndat18/claude-session-notify
